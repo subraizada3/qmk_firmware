@@ -1,3 +1,7 @@
+- `pacman -S avr-gcc avr-binutils dfu-programmer dfu-util`
+- `make git-submodule` (once)
+- `sudo make keebio/nyquist/rev3:subraizada3:flash`
+
 # Quantum Mechanical Keyboard Firmware
 
 [![Current Version](https://img.shields.io/github/tag/qmk/qmk_firmware.svg)](https://github.com/qmk/qmk_firmware/tags)
