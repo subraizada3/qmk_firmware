@@ -20,13 +20,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [0] = LAYOUT(
 		KC_GRV , KC_1   , KC_2   , KC_3   , KC_4   , KC_5   ,   KC_6   , KC_7   , KC_8   , M_9    , M_0    , M_LPAR ,
 		KC_TAB , KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,   KC_Y   , KC_U   , KC_I   , KC_O   , KC_P   , M_RPAR ,
-		KC_ESC  , KC_A   , KC_S   , KC_D   , KC_F   , KC_G   ,   KC_H   , KC_J   , KC_K   , KC_L  , KC_SCLN, MO(1)  ,
+		KC_ESC , KC_A   , KC_S   , KC_D   , KC_F   , KC_G   ,   KC_H   , KC_J   , KC_K   , KC_L   , KC_SCLN, MO(1)  ,
 		KC_LSFT, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,   KC_N   , KC_M   , KC_COMM, KC_DOT , KC_SLSH, KC_RSFT,
-		KC_LCTL, MO(1)  , KC_LWIN, KC_LALT, KC_BSPC, KC_SPC ,   KC_SPC , KC_ENT , KC_RALT, KC_QUOT, KC_DEL , KC_RCTL
+		KC_LCTL, MO(1)  , KC_LWIN, KC_LALT, KC_BSPC, KC_SPC ,   KC_SPC , KC_ENT , KC_RALT, KC_QUOT, M_DELP , KC_RCTL
 	),
 
 
-// TODO: remove backlight and reset stuff on last row when right half is complete
 //┌── F1 ──┬── F2 ──┬── F3 ──┬── F4 ──┬── F5 ──┬── F6 ──┐ ┌── F7 ──┬── F8 ──┬── F9 ──┬── F10 ─┬── F11 ─┬── F12 ─┐
 //├────────┼─ home ─┼── ^ ───┼─ end ──┼─ pgup ─┼─ vol+ ─┤ ├─ brt- ─┼brt togg┼─ brt+ ─┼─ menu ─┼─ caps ─┼──reset─┤
 //├────────┼── < ───┼── v ───┼── > ───┼─ pgdn ─┼─ mute ─┤ ├── < ───┼── v ───┼── ^ ───┼── > ───┼─insert─┼────────┤
@@ -34,10 +33,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //└────────┴────────┴────────┴────────┴────────┴────────┘ └────────┴────────┴────────┴────────┴────────┴────────┘
 	[1] = LAYOUT(
 		KC_F1  , KC_F2  , KC_F3  , KC_F4  , KC_F5  , KC_F6  ,   KC_F7  , KC_F8  , KC_F9  , KC_F10 , KC_F11 , KC_F12 ,
-		_______, KC_HOME, KC_UP  , KC_END , KC_PGUP, KC_VOLU,   BL_DEC , BL_TOGG, BL_INC , KC_APP , KC_CAPS, RESET  ,
+		_______, KC_HOME, KC_UP  , KC_END , KC_PGUP, KC_VOLU,   BL_DEC , BL_TOGG, BL_INC , KC_APP , KC_CAPS, _______,
 		_______, KC_LEFT, KC_DOWN, KC_RGHT, KC_PGDN, KC_MUTE,   KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, KC_INS , _______,
 		_______, KC_MPRV, KC_MPLY, KC_MNXT, KC_PSCR, KC_VOLD,   KC_PLUS, KC_EQL , KC_MINS, KC_UNDS, KC_BSLS, _______,
-		RESET  , _______, _______, BL_DEC , BL_TOGG, BL_INC ,   _______, _______, _______, XXXXXXX, KC_DEL , _______
+		_______, _______, _______, _______, _______, _______,   _______, _______, _______, XXXXXXX, KC_DEL , _______
 	)
 };
 
@@ -60,25 +59,102 @@ static bool lsft_prsd = false;
 static bool rsft_prsd = false;
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-	uint16_t sftdcode;
-	switch (keycode) {
-		default: return true;
+	//rgblight_sethsv(0,0,0); // to configure EEPROM
 
+	uint16_t kc = keycode;
+	switch (keycode) {
 		case KC_LSFT: lsft_prsd = record->event.pressed; return true;
 		case KC_RSFT: rsft_prsd = record->event.pressed; return true;
 
-		case M_DELP: sftdcode = (lsft_prsd || rsft_prsd) ? KC_PIPE : KC_DEL ; break;
-		case M_9   : sftdcode = (lsft_prsd || rsft_prsd) ? KC_LCBR : KC_9   ; break;
-		case M_0   : sftdcode = (lsft_prsd || rsft_prsd) ? KC_RCBR : KC_0   ; break;
-		case M_LPAR: sftdcode = (lsft_prsd || rsft_prsd) ? KC_LBRC : KC_LPRN; break;
-		case M_RPAR: sftdcode = (lsft_prsd || rsft_prsd) ? KC_RBRC : KC_RPRN; break;
-	}
+		// this is the template for a key that shifts into another shifted key
+		// e.g. normally delete, becomes | (pipe) when shifted
+		case M_DELP:
+			kc = (lsft_prsd || rsft_prsd) ? KC_BSLS : KC_DEL;
+			if (record->event.pressed)
+				register_code(kc);
+			else
+				unregister_code(kc);
+			return false;
 
-	if (lsft_prsd) unregister_code(KC_LSFT);
-	if (rsft_prsd) unregister_code(KC_RSFT);
-	if (record->event.pressed) register_code(sftdcode);
-	else unregister_code(sftdcode);
-	if (lsft_prsd) register_code(KC_LSFT);
-	if (rsft_prsd) register_code(KC_RSFT);
-	return false;
+		case M_9:
+			kc = (lsft_prsd || rsft_prsd) ? KC_LBRC : KC_9;
+			if (record->event.pressed)
+				register_code(kc);
+			else
+				unregister_code(kc);
+			return false;
+
+		case M_0:
+			kc = (lsft_prsd || rsft_prsd) ? KC_RBRC : KC_0;
+			if (record->event.pressed)
+				register_code(kc);
+			else
+				unregister_code(kc);
+			return false;
+
+	// this is the template for a key that is a shifted key normally and a normal
+	//   key when shifted
+	// e.g. normally (, becomes [ when shifted
+	case M_LPAR:
+			kc = (lsft_prsd || rsft_prsd) ? KC_LBRC : KC_9;
+			if (lsft_prsd || rsft_prsd) {
+				if (lsft_prsd) unregister_code(KC_LSFT);
+				if (rsft_prsd) unregister_code(KC_RSFT);
+				if (record->event.pressed)
+					register_code(kc);
+				else
+					unregister_code(kc);
+				if (lsft_prsd) register_code(KC_LSFT);
+				if (rsft_prsd) register_code(KC_RSFT);
+			} else {
+				register_code(KC_LSFT);
+				if (record->event.pressed)
+					register_code(kc);
+				else
+					unregister_code(kc);
+				unregister_code(KC_LSFT);
+			}
+			return false;
+
+		case M_RPAR:
+			kc = (lsft_prsd || rsft_prsd) ? KC_RBRC : KC_0;
+			if (lsft_prsd || rsft_prsd) {
+				if (lsft_prsd) unregister_code(KC_LSFT);
+				if (rsft_prsd) unregister_code(KC_RSFT);
+				if (record->event.pressed)
+					register_code(kc);
+				else
+					unregister_code(kc);
+				if (lsft_prsd) register_code(KC_LSFT);
+				if (rsft_prsd) register_code(KC_RSFT);
+			} else {
+				register_code(KC_LSFT);
+				if (record->event.pressed)
+					register_code(kc);
+				else
+					unregister_code(kc);
+				unregister_code(KC_LSFT);
+			}
+			return false;
+
+		// this is the template for a key that shifts into a normal key
+		// e.g. normally A, becomes 3 when shfited
+		/*case M_ASDF:
+			kc = (lsft_prsd || rsft_prsd) ? KC_3 : KC_A;
+			if (record->event.pressed) {
+				if (lsft_prsd) unregister_code(KC_LSFT);
+				if (rsft_prsd) unregister_code(KC_RSFT);
+				register_code(kc);
+				if (lsft_prsd) register_code(KC_LSFT);
+				if (rsft_prsd) register_code(KC_RSFT);
+			} else {
+				if (lsft_prsd) unregister_code(KC_LSFT);
+				if (rsft_prsd) unregister_code(KC_RSFT);
+				unregister_code(kc);
+				if (lsft_prsd) register_code(KC_LSFT);
+				if (rsft_prsd) register_code(KC_RSFT);
+			}
+			return false;*/
+	}
+	return true;
 }

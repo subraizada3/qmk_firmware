@@ -24,3 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #undef BACKLIGHT_LEVELS
 #define BACKLIGHT_LEVELS 3
+
+#undef USB_POLLING_INTERVAL_MS
+#define USB_POLLING_INTERVAL_MS 1
